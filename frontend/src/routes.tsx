@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Register from "./auth/Register";
 import Login from "./auth/Login";
 import NotFound from "./pages/NotFound";
+import History from "./pages/History";
 
 
 const appRoutes = createBrowserRouter([
@@ -13,6 +14,10 @@ const appRoutes = createBrowserRouter([
             {
                 path: '/',
                 element: <Home />
+            },
+            {
+                path: '/history',
+                element: <History />
             }
         ]
     },
