@@ -19,7 +19,7 @@ import CarCrashIcon from '@mui/icons-material/CarCrash';
 import RotateLeftIcon from '@mui/icons-material/RotateLeft';
 import DirectionsCarFilledIcon from '@mui/icons-material/DirectionsCarFilled';
 import { useEffect, useState } from 'react';
-import { MyLocation, Person } from '@mui/icons-material';
+import { Logout, MyLocation, Person } from '@mui/icons-material';
 import axios from 'axios';
 import { CarMake } from '../models/carMake';
 import { CarModel } from '../models/carModels';
@@ -32,8 +32,8 @@ import DragHandleIcon from '@mui/icons-material/DragHandle';
 import ChecklistRtlIcon from '@mui/icons-material/ChecklistRtl';
 import { deepOrange } from '@mui/material/colors';
 import backImage from "../assets/download.svg";
-
-const defaultTheme = createTheme();
+import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { TokenModel } from '../models/tokenModel';
 
 export default function Home() {
   const steps: number = 3;
@@ -45,6 +45,7 @@ export default function Home() {
   const [makes, setMakes] = useState<CarMake[]>([]);
   const [models, setModels] = useState<CarModel[]>([]);
   const [openQuoteModal, setOpenQuoteModal] = useState(false);
+  const [decodedToken, setDecodedToken] = useState<TokenModel | null>(null);
 
   const handleMake = (event: SelectChangeEvent) => {
     setBrand(event.target.value);
@@ -58,12 +59,21 @@ export default function Home() {
   };
 
   useEffect(() => {
-    makes.push({
-      id: 1,
-      name: 'Mazda'
-    });
     // fetchCarMakes();
+    const token = localStorage.getItem('token');
+    console.log(token);
+    if(token) {
+      try {
+        const decoded = jwtDecode<TokenModel>(token);
+        setDecodedToken(decoded);
+      } catch (error) {
+        console.error('Invalid token', error);
+      }
+    }
+
+    console.log(decodedToken)
   }, []);
+ 
 
   const fetchCarMakes = async () => {
     // try {
@@ -99,6 +109,21 @@ export default function Home() {
     console.log('SAVE');
   }
 
+  const profileName = (name: string | undefined) => {
+    if(name) {
+      const words = name.trim().split(/\s+/);
+
+      if (words.length < 2) {
+        return name.split('')[0];
+      }
+  
+      const initials = words[0][0] + words[1][0];
+      return initials.toUpperCase();
+    }
+
+    return '';
+  }
+
   return (
     <div>
       <Container className="p-1" maxWidth="xl" sx={{ bgcolor: '#fff', mb: 2,  borderRadius: '1rem' }}>
@@ -106,17 +131,22 @@ export default function Home() {
           <Typography component="h1" variant="h5" fontWeight={600}>
             Seguro Automotriz
           </Typography>
-          <Link to="/history" className="flex gap-1">
-            <Avatar sx={{ bgcolor: '#1e88e5' }}>KH</Avatar>
-            <div className="flex flex-col">
-              <Typography component="p" color="black" fontWeight={600}>
-                Kevin Hawkins
-              </Typography>
-              <Typography component="p"  lineHeight={0} style={{color: 'grey'}}>
-                Cliente
-              </Typography>
-            </div>
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link to="/history" className="flex">
+              <Avatar sx={{ bgcolor: '#1e88e5' }}>{profileName(decodedToken?.unique_name)}</Avatar>
+              <div className="flex flex-col">
+                <Typography component="p" color="black" fontWeight={600}>
+                  {decodedToken?.unique_name}
+                </Typography>
+                <Typography component="p"  lineHeight={0} style={{color: 'grey'}}>
+                  {decodedToken?.role == '2' ? 'Cliente' : 'Administrador'}
+                </Typography>
+              </div>
+            </Link>
+            <IconButton color='primary' aria-label="logout">
+              <Logout />
+            </IconButton>
+          </div>
         </div>
         <div className="flex justify-between my-1">
           <div className="flex items-center">

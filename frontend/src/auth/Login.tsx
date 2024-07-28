@@ -13,45 +13,50 @@ import { Container, CssBaseline, FormControl, IconButton, Input, InputAdornment,
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 import insurance from '../assets/insurance.jpg';
+import { API_URL } from '../environment/environment';
+import Swal from 'sweetalert2';
 const defaultTheme = createTheme();
 
 export default function Login() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState<string>('Credenciales incorrectos!');
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
-
-  const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setOpen(false);
-  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const user = {
-      username: data.get('username'),
+      email: data.get('email'),
       password: data.get('password'),
     };
 
     console.log(user);
 
-    // console.log('API:', API_URL);
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, user);
+      console.log(response.data);
+      localStorage.setItem('token', response.data.token);
+      navigate('/');
 
-    // try {
-    //   const response = await axios.post(`${API_URL}/auth/login`, user);
-    //   console.log(response.data);
-    //   localStorage.setItem('token', response.data.jwtToken);
-    //   navigate('/home');
+    } catch (error: any) {
+      console.error(error);
 
-    // } catch (error) {
-    //   console.error(error);
-    //   // setOpen(true);
-    // }
+      const nestedData = error.response.data;
+      var message = '';
+
+      if(nestedData.message) {
+        message = nestedData.message
+      }else {
+        const value: any = Object.values(nestedData.errors)[0];
+        message = value[0];
+      }
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: message,
+      });
+    }
   };
 
   return (
@@ -66,7 +71,7 @@ export default function Login() {
             ¡Nos alegra volver a verte! Para utilizar tu cuenta, inicia sesión.
           </Typography>
           <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <TextField margin="normal" fullWidth variant='standard' id="username" label="Correo electrónico" name="username" autoComplete="email" autoFocus />
+            <TextField margin="normal" fullWidth variant='standard' id="email" label="Correo electrónico" name="email" autoComplete="email" autoFocus />
             <FormControl margin="normal" fullWidth variant="standard">
               <InputLabel htmlFor="standard-adornment-password">Contraseña</InputLabel>
               <Input id="standard-adornment-password" name='password' type={showPassword ? 'text' : 'password'}
@@ -90,12 +95,6 @@ export default function Login() {
           </Box>
         </Box>
       </Container>
-
-      <Snackbar open={open} autoHideDuration={6000} onClose={handleClose} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-        <Alert onClose={handleClose} severity="success" variant="filled" sx={{ width: '100%' }}>
-          {message}
-        </Alert>
-      </Snackbar>
     </ThemeProvider>
   );
 }
