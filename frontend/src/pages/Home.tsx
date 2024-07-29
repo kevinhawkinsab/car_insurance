@@ -19,7 +19,7 @@ import CarCrashIcon from '@mui/icons-material/CarCrash';
 import RotateLeftIcon from '@mui/icons-material/RotateLeft';
 import DirectionsCarFilledIcon from '@mui/icons-material/DirectionsCarFilled';
 import { useEffect, useState } from 'react';
-import { ArrowBackIosNew, Logout, MyLocation, Person } from '@mui/icons-material';
+import { ArrowBackIosNew, AttachMoney, Logout, MyLocation, Paid, Person } from '@mui/icons-material';
 import axios from 'axios';
 import { CarMake } from '../models/carMake';
 import { CarModel } from '../models/carModels';
@@ -36,6 +36,9 @@ import { jwtDecode, JwtPayload } from 'jwt-decode';
 import { TokenModel } from '../models/tokenModel';
 import { API_URL } from '../environment/environment';
 import { useForm } from 'react-hook-form';
+import { InsuranceModel } from '../models/insuranceModel';
+import dayjs, { Dayjs } from 'dayjs';
+import Swal from 'sweetalert2';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -47,11 +50,14 @@ export default function Home() {
   const [activeStep, setStep] = useState(0);
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
+  const [insurance, setInsurance] = useState<InsuranceModel>();
+  const [insuranceId, setInsuranceId] = useState<number|null>(null)
   const [token, setToken] = useState<string | null>(null);
   const [makes, setMakes] = useState<CarMake[]>([]);
   const [models, setModels] = useState<CarModel[]>([]);
   const [openQuoteModal, setOpenQuoteModal] = useState(false);
   const [decodedToken, setDecodedToken] = useState<TokenModel | null>(null);
+  const [birthdate, setBirthdate] = useState<Dayjs | null>(dayjs('2022-04-17'));
 
   useEffect(() => {
     // fetchCarMakes();
@@ -61,6 +67,7 @@ export default function Home() {
       setToken(token);
       try {
         const decoded = jwtDecode<TokenModel>(token);
+        console.log(decoded )
         setDecodedToken(decoded);
       } catch (error) {
         console.error('Invalid token', error);
@@ -137,8 +144,6 @@ export default function Home() {
   }
 
   const logout = async () => {
-    console.log('Logout');
-
     try {
       const response = await axios.post(`${API_URL}/auth/logout`, {},
         {
@@ -156,15 +161,68 @@ export default function Home() {
     }
   }
 
-  const generateQuote = (data: any) =>  {
-    console.log(data)
+  const generateQuote = async (data: any) =>  {
+    data.birthdate = birthdate?.format('YYYY-MM-DD');
+    console.log(data);
 
+    const cost = data.cost;
+    const year = Number(data.year);
+    var insurance;
+    try {
+      const response = await axios.get(`${API_URL}/quote/quotePreview`, {
+        params: {
+          cost,
+          year,
+        },
+      });
+
+      insurance = response.data;
+      console.log(insurance);
+      data.price = insurance.price;
+
+    } catch (err: any) {
+      console.log(err.response.data);
+    }
+    setInsurance(data);
+    setInsuranceId(insurance.quoteId);
     setOpenQuoteModal(true);
   };
 
-  const saveQuote = (event: React.FormEvent<HTMLFormElement>) => {
+  const saveQuote = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log('SAVE');
+    console.log('SAVE', insurance);
+    try {
+      const response = await axios.post(`${API_URL}/quote`, insurance,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log(response.data);
+      setOpenQuoteModal(false);
+      Swal.fire({
+        icon: "success",
+        title: "Éxito",
+        text: response.data,
+      });
+    } catch (error: any) {
+      console.error(error);
+
+      setOpenQuoteModal(false);
+      const nestedData = error.response.data;
+      var message = '';
+
+      if(nestedData.message) {
+        message = nestedData.message
+      }else {
+        const value: any = Object.values(nestedData.errors)[0];
+        message = value[0];
+      }
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: message,
+      });
+    }
   }
 
   return (
@@ -174,14 +232,14 @@ export default function Home() {
           <Typography component="h1" variant="h5" fontWeight={600}>
             Seguro Automotriz
           </Typography>
-          <div className="flex items-center gap-1">
-            <Link to="/history" className="flex">
+          <div className="flex gap-1">
+            <Link to="/history" className="flex mx-1">
               <Avatar sx={{ bgcolor: '#1e88e5' }}>{profileName(decodedToken?.unique_name)}</Avatar>
               <div className="flex flex-col">
                 <Typography component="p" color="black" fontWeight={600}>
                   {decodedToken?.unique_name}
                 </Typography>
-                <Typography component="p" lineHeight={0} style={{ color: 'grey' }}>
+                <Typography component="p" lineHeight={0} color="text.secondary">
                   {decodedToken?.role === '2' ? 'Cliente' : 'Administrador'}
                 </Typography>
               </div>
@@ -228,14 +286,14 @@ export default function Home() {
                   <RadioGroup row aria-labelledby="demo-radio-buttons-group-label" defaultValue="1">
                     <Paper elevation={12} className="radio-card w-2 h-2" sx={{ borderRadius: 3 }}>
                       <DirectionsCarFilledIcon color='primary' sx={{ fontSize: '6rem' }} />
-                      <FormControlLabel value="1" control={<Radio {...register('insurances')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                      <FormControlLabel value="1" control={<Radio {...register('insuranceId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
                       <Typography component="p" fontWeight={600}>
                         Cobertura completa
                       </Typography>
                     </Paper>
                     <Paper elevation={12} className="radio-card w-2 h-2" sx={{ borderRadius: 3 }}>
                       <CarCrashIcon color='primary' sx={{ fontSize: '6rem' }} />
-                      <FormControlLabel value="2" control={<Radio {...register('insurances')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                      <FormControlLabel value="2" control={<Radio {...register('insuranceId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
                       <Typography component="p" fontWeight={600}>
                         Daños a terceros
                       </Typography>
@@ -259,9 +317,12 @@ export default function Home() {
                     <FormControl variant="outlined" fullWidth sx={{ mt: 2 }}>
                       <InputLabel id="demo-simple-select-label">Marca</InputLabel>
                       <Select labelId="demo-simple-select-label" id="demo-simple-select" label="Marca" value={brand} {...register('makes')} onChange={handleMake}>
-                        {makes.map((item) => (
+                        {/* {makes.map((item) => (
                           <MenuItem value={item.id} key={item.id}>{item.name}</MenuItem>
-                        ))}
+                        ))} */}
+                                       <MenuItem value={'10'}>Ten</MenuItem>
+                        <MenuItem value={'20'}>Twenty</MenuItem>
+                        <MenuItem value={'30'}>Thirty</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -272,9 +333,9 @@ export default function Home() {
                     <FormControl variant="outlined" fullWidth sx={{ mt: 2 }}>
                       <InputLabel id="demo-simple-select-label">Modelo</InputLabel>
                       <Select labelId="demo-simple-select-label" id="demo-simple-select" value={model} label="Modelo" {...register('model')} onChange={handleModel}>
-                        <MenuItem value={10}>Ten</MenuItem>
-                        <MenuItem value={20}>Twenty</MenuItem>
-                        <MenuItem value={30}>Thirty</MenuItem>
+                        <MenuItem value={'10'}>Ten</MenuItem>
+                        <MenuItem value={'20'}>Twenty</MenuItem>
+                        <MenuItem value={'30'}>Thirty</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -298,7 +359,7 @@ export default function Home() {
                   <Grid item xs={6}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DemoContainer components={['DatePicker']}>
-                        <DatePicker name="birthdate" label="Fecha de nacimiento" />
+                        <DatePicker label="Fecha de nacimiento" value={birthdate} onChange={(newBirthdate) => setBirthdate(newBirthdate)} />
                       </DemoContainer>
                     </LocalizationProvider>
                   </Grid>
@@ -331,21 +392,21 @@ export default function Home() {
                   <RadioGroup row aria-labelledby="demo-radio-buttons-group-label" defaultValue="1">
                     <Paper elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
                       <DragHandleIcon color='primary' sx={{ fontSize: '4rem' }} />
-                      <FormControlLabel value="1"  control={<Radio {...register('coverages')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                      <FormControlLabel value="1"  control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
                       <Typography component="p" fontWeight={600}>
                         Resp. civil
                       </Typography>
                     </Paper>
                     <Paper elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
                       <RuleIcon color='primary' sx={{ fontSize: '4rem' }} />
-                      <FormControlLabel value="2" control={<Radio {...register('coverages')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                      <FormControlLabel value="2" control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
                       <Typography component="p" fontWeight={600}>
                         Limitada
                       </Typography>
                     </Paper>
                     <Paper elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
                       <ChecklistRtlIcon color='primary' sx={{ fontSize: '4rem' }} />
-                      <FormControlLabel value="3" control={<Radio {...register('coverages')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                      <FormControlLabel value="3" control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
                       <Typography component="p" fontWeight={600}>
                         Amplia
                       </Typography>
@@ -371,33 +432,34 @@ export default function Home() {
       </Container>
 
       <Dialog open={openQuoteModal} className="p-1" onClose={() => setOpenQuoteModal(false)} PaperProps={{ component: 'form', onSubmit: saveQuote }}>
-        <DialogTitle>Cotización #12345</DialogTitle>
+        <DialogTitle className="flex items-center">
+          <Paid color='primary' sx={{ fontSize: '4rem' }} />
+          <div className="flex flex-col justify-center py-1">
+            <Typography id="modal-modal-title" variant="h6" fontWeight={600} component="h2">Información General</Typography>
+            <Typography component="p" lineHeight={0}>Cotización: #{insuranceId}</Typography>
+          </div>
+        </DialogTitle>
         <DialogContent>
-          <Grid container>
-            <Grid sx={{ paddingTop: '1rem' }} item xs={6}>
-              <Typography id="modal-modal-title" variant="h6" component="h2">
-                Nombre: Kevin Hawkins
-              </Typography>
+          <Grid container className="p-1">
+            <Grid item xs={6}>
+              <Typography id="modal-modal-title" variant="h6" component="h2">Nombre:</Typography>
+              <Typography component="p">{insurance?.fullName}</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography id="modal-modal-title" variant="h6" component="h2">Marca:</Typography>
+              <Typography component="p">{insurance?.makes}</Typography>
             </Grid>
             <Grid sx={{ paddingTop: '1rem' }} item xs={6}>
-              <Typography id="modal-modal-title" variant="h6" component="h2">
-                Marca: Kia
-              </Typography>
+              <Typography id="modal-modal-title" variant="h6" component="h2">Modelo:</Typography>
+              <Typography component="p">{insurance?.model}</Typography>
             </Grid>
             <Grid sx={{ paddingTop: '1rem' }} item xs={6}>
-              <Typography id="modal-modal-title" variant="h6" component="h2">
-                Modelo: Kia Picanto
-              </Typography>
+              <Typography id="modal-modal-title" variant="h6" component="h2">Año:</Typography>
+              <Typography component="p">{insurance?.year}</Typography>
             </Grid>
             <Grid sx={{ paddingTop: '1rem' }} item xs={6}>
-              <Typography id="modal-modal-title" variant="h6" component="h2">
-                Año: 2020
-              </Typography>
-            </Grid>
-            <Grid sx={{ paddingTop: '1rem' }} item xs={6}>
-              <Typography id="modal-modal-title" variant="h6" component="h2">
-                Precio: $1,200
-              </Typography>
+              <Typography id="modal-modal-title" variant="h6" component="h2">Precio:</Typography>
+              <Typography component="p">${insurance?.price}</Typography>
             </Grid>
           </Grid>
         </DialogContent>

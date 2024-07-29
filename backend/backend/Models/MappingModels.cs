@@ -7,6 +7,9 @@ namespace backend.Models
     {
         public MappingModels() {
             CreateMap<User, UserGetDto>();
+            CreateMap<Quote, QuoteGetDto>();
+            CreateMap<Insurance, InsuranceGetDto>();
+            CreateMap<Coverage, CoverageGetDto>();
         }
     }
 }

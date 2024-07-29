@@ -6,6 +6,8 @@ import { Avatar, Button, Chip, Container, FormControlLabel, Grid, List, ListItem
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { API_URL } from '../environment/environment';
+import moment from 'moment';
 
 
 const Demo = styled('div')(({ theme }) => ({
@@ -23,17 +25,28 @@ const History = () => {
 
   const fetchRecords = async () => {
     try {
-      const response = await axios.get('https://pokeapi.co/api/v2/pokemon');
-      console.log(response.data.results);
-      setRecords(response.data.results);
+      const response = await axios.get(`${API_URL}/quote`)
+      console.log(response.data);
+      setRecords(response.data);
     } catch (error) {
       console.log(error);
     }
   };
 
-  const splitName = (name: string) => {
-    return name.split(" ").map(word => word.substring(0, 2)).join("");
-  };
+  const profileName = (name: string | undefined) => {
+    if (name) {
+      const words = name.trim().split(/\s+/);
+
+      if (words.length < 2) {
+        return name.split('')[0];
+      }
+
+      const initials = words[0][0] + words[1][0];
+      return initials.toUpperCase();
+    }
+
+    return '';
+  }
 
   return (
     <>
@@ -73,7 +86,7 @@ const History = () => {
               <div className="radio-card w-3 h-3" style={{ background: '#f1f5f8', borderRadius: '1rem' }}>
                 <DirectionsCarFilledIcon color='primary' sx={{ fontSize: '10rem' }} />
                 <Typography component="p" fontWeight={600}>
-                  {selectedRecord?.name}
+                  {selectedRecord?.fullName}
                 </Typography>
               </div>
             </div>
@@ -116,12 +129,12 @@ const History = () => {
               </TableHead>
               <TableBody>
                 {records.slice(0, 9).map((item: any) => (
-                  <TableRow onClick={(() => setSelectedRecord(item))}>
+                  <TableRow key={item.id} onClick={(() =>  setSelectedRecord(item))}>
                     <TableCell>
-                      <Avatar sx={{ bgcolor: '#1e88e5' }}>{splitName(item.name)}</Avatar>
+                      <Avatar sx={{ bgcolor: '#1e88e5' }}>{profileName(item.fullName)}</Avatar>
                     </TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>10/12/0202</TableCell>
+                    <TableCell>{item.makes}</TableCell>
+                    <TableCell>{moment(item.creationDate).format('L')}</TableCell>
                     <TableCell>${item.price}</TableCell>
                   </TableRow>
                 ))}

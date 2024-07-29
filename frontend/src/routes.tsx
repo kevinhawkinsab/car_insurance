@@ -4,6 +4,7 @@ import Register from "./auth/Register";
 import Login from "./auth/Login";
 import NotFound from "./pages/NotFound";
 import History from "./pages/History";
+import ProtectedRoute from "./guards/ProtectedRoute";
 
 
 const appRoutes = createBrowserRouter([
@@ -13,11 +14,11 @@ const appRoutes = createBrowserRouter([
         children: [
             {
                 path: '/',
-                element: <Home />
+                element: <ProtectedRoute><Home /></ProtectedRoute>
             },
             {
                 path: '/history',
-                element: <History />
+                element: <ProtectedRoute><History /></ProtectedRoute>
             }
         ]
     },

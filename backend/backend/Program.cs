@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(conn
 
 builder.Services.AddAutoMapper(typeof(MappingModels));
 
-var key = Encoding.ASCII.GetBytes("YourSuperSecretKeyHere");
+var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddSingleton<ITokenBlacklistService, TokenBlackListService>();
 
 builder.Services.AddAuthentication(options =>
@@ -36,8 +37,11 @@ builder.Services.AddAuthentication(options =>
         LifetimeValidator = (notBefore, expires, tokenToValidate, validationParameters) =>
         {
             var tokenBlacklistService = builder.Services.BuildServiceProvider().GetService<ITokenBlacklistService>();
-            var token = (JwtSecurityToken)tokenToValidate;
-            return !tokenBlacklistService.IsTokenBlacklisted(token.RawData) && expires > DateTime.UtcNow;
+            if (tokenToValidate is JsonWebToken jwtToken)
+            {
+                return !tokenBlacklistService.IsTokenBlacklisted(jwtToken.EncodedToken) && expires > DateTime.UtcNow;
+            }
+            return false;
         }
     };
 });

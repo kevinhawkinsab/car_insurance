@@ -14,7 +14,7 @@
 
         public string FullName { get; set; }
 
-        public DateOnly Birthdate { get; set; }
+        public DateTime Birthdate { get; set; }
 
         public string Gender { get; set; }
 
