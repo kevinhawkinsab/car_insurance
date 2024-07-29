@@ -67,12 +67,12 @@ namespace backend.Controllers
 
             if (string.IsNullOrEmpty(token))
             {
-                return BadRequest("Invalid token");
+                return BadRequest("Token inválido.");
             }
 
             tokenBlacklistService.AddTokenToBlackList(token);
 
-            return Ok(new { message = "Sesión finalizada." });
+            return Ok(new { message = "Ok" });
         }
     }
 }

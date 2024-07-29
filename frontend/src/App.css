@@ -76,9 +76,12 @@
 }
 
 .btn-back {
+  border: 0;
   width: 45px;
   height: 45px;
+  cursor: pointer;
   display: flex;
+  color: #2196f3;
   align-items: center;
   justify-content: center;
   background: #f1f5f8;
