@@ -48,14 +48,15 @@ export default function Home() {
   const {register,handleSubmit } = useForm();
   const steps: number = 3;
   const [activeStep, setStep] = useState(0);
-  const [brand, setBrand] = useState('');
-  const [model, setModel] = useState('');
+  const [brand, setBrand] = useState('1');
+  const [model, setModel] = useState('1');
   const [insurance, setInsurance] = useState<InsuranceModel>();
   const [insuranceId, setInsuranceId] = useState<number|null>(null)
   const [token, setToken] = useState<string | null>(null);
   const [insuranceList, setInsuranceList] = useState<InsuranceList[]>([]);
   const [coveragesList, setCoveragesList] = useState<CoverageList[]>([]);
   const [makes, setMakes] = useState<CarMake[]>([]);
+  const [makesId, setMakesId] = useState<number>(1);
   const [models, setModels] = useState<CarModel[]>([]);
   const [openQuoteModal, setOpenQuoteModal] = useState(false);
   const [decodedToken, setDecodedToken] = useState<TokenModel | null>(null);
@@ -68,7 +69,7 @@ export default function Home() {
     const token = localStorage.getItem('token');
     console.log(token);
 
-    // fetchCarMakes();
+    fetchCarMakes();
     fetchCoverages();
     fetchInsurances();
 
@@ -96,6 +97,7 @@ export default function Home() {
       });
       setMakes(response.data.data);
       console.log(response.data.data);
+      fetchCarModels(1, '2020')
     } catch (err) {
       console.error(err);
     }
@@ -104,7 +106,7 @@ export default function Home() {
   const fetchCarModels = async (car_make_id: number, car_year: string) => {
     console.log(car_make_id, car_year);
     try {
-      const response = await axios.get(`https://car-api2.p.rapidapi.com/api/models?sort=id&direction=asc&year=2020&verbose=yes&make_id=${car_make_id}`, {
+      const response = await axios.get(`https://car-api2.p.rapidapi.com/api/models?sort=id&direction=asc&year=${car_year}&verbose=yes&make_id=${car_make_id}`, {
         headers: {
           'x-rapidapi-key': 'f267c10fc2mshdcfd5864c42e3e9p1b800ejsn50971d5cc15e'
         }
@@ -156,6 +158,7 @@ export default function Home() {
   const handleMake = (event: SelectChangeEvent) => {
     setBrand(event.target.value);
     console.log(event.target.value);
+    setMakesId(Number(event.target.value));
 
     fetchCarModels(Number(event.target.value), '2020');
   };
@@ -167,6 +170,17 @@ export default function Home() {
   const generateQuote = async (data: any) =>  {
     data.birthdate = birthdate?.format('YYYY-MM-DD');
     console.log(data);
+
+    const makeName = makes.find(item => item.id == data.makes)?.name; 
+    const modelName = models.find(item => item.id == data.model)?.name;
+
+    console.log(makeName, ' | ' , modelName);
+
+
+    data.makes = makeName;
+    data.model = modelName;
+
+    console.log('FINAL: ', data)
 
     const cost = data.cost;
     const year = Number(data.year);
@@ -190,6 +204,33 @@ export default function Home() {
     setInsuranceId(insurance.quoteId);
     setOpenQuoteModal(true);
   };
+
+  const inputNumber = (event: any) => {
+    console.log(event.key);
+    const pattern = /^[0-9]*$/;
+
+    if (!pattern.test(event.key) && event.key != 'Backspace') {
+      event.preventDefault();
+    }
+  }
+
+  const inputAmount = (event: any) => {
+    console.log(event.key);
+    const inputValue = event.target.value;
+    const pattern = /^[0-9]*\.?[0-9]{0,2}$/;
+
+    if (!pattern.test(event.key) && event.key != 'Backspace') {
+      event.preventDefault();
+    }
+
+    if (inputValue.includes('.')) {
+      const decimalPart = inputValue.split('.');
+      console.log(decimalPart[1])
+      if (decimalPart[1].length >= 2 && event.key !== 'Backspace') {
+        event.preventDefault();
+      }
+    }
+  }
 
   const saveQuote = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -306,30 +347,33 @@ export default function Home() {
                     <FormControl variant="outlined" fullWidth sx={{ mt: 2 }}>
                       <InputLabel id="demo-simple-select-label">Marca</InputLabel>
                       <Select labelId="demo-simple-select-label" id="demo-simple-select" label="Marca" value={brand} {...register('makes')} onChange={handleMake}>
-                        {/* {makes.map((item) => (
+                        {makes.map((item) => (
                           <MenuItem value={item.id + ''} key={item.id}>{item.name}</MenuItem>
-                        ))} */}
-                        <MenuItem value={'10'}>Ten</MenuItem>
+                        ))}
+                        {/* <MenuItem value={'10'}>Ten</MenuItem>
                         <MenuItem value={'20'}>Twenty</MenuItem>
-                        <MenuItem value={'30'}>Thirty</MenuItem>
+                        <MenuItem value={'30'}>Thirty</MenuItem> */}
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField variant="outlined" margin="normal" required fullWidth id="year" label="Año" {...register('year')}  />
+                    <TextField variant="outlined"  margin="normal" required fullWidth id="year" onKeyDown={inputNumber} label="Año" {...register('year')}  />
                   </Grid>
                   <Grid item xs={12}>
                     <FormControl variant="outlined" fullWidth sx={{ mt: 2 }}>
                       <InputLabel id="demo-simple-select-label">Modelo</InputLabel>
                       <Select labelId="demo-simple-select-label" id="demo-simple-select" value={model} label="Modelo" {...register('model')}  onChange={handleModel}>
-                        <MenuItem value={'10'}>Ten</MenuItem>
+                        {models.map((item) => (
+                          <MenuItem value={item.id + ''} key={item.id}>{item.name}</MenuItem>
+                        ))}
+                        {/* <MenuItem value={'10'}>Ten</MenuItem>
                         <MenuItem value={'20'}>Twenty</MenuItem>
-                        <MenuItem value={'30'}>Thirty</MenuItem>
+                        <MenuItem value={'30'}>Thirty</MenuItem> */}
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12}>
-                    <TextField variant="outlined" margin="normal" required fullWidth id="cost" label="Costo" {...register('cost')}  />
+                    <TextField variant="outlined" margin="normal" required fullWidth id="cost" onKeyDown={inputAmount} label="Costo" {...register('cost')}  />
                   </Grid>
                 </Grid>
               </Box>

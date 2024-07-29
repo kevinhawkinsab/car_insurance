@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using backend.Context;
+using backend.EncryptService;
 using backend.Models;
 using backend.Models.Dto;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace backend.Controllers
@@ -19,7 +21,6 @@ namespace backend.Controllers
         private readonly IMapper mapper;
         private readonly AppDbContext dbContext;
         private readonly IConfiguration configuration;
-
         public QuoteController(IMapper mapper, AppDbContext _dbContext, IConfiguration _configuration)
         {
             this.mapper = mapper;
@@ -28,10 +29,27 @@ namespace backend.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ObtenerCotizaciones ()
+        public async Task<IActionResult> ObtenerCotizaciones()
         {
+            var cryptokey = "A3B2C4D5E6F7G8H9";
             var cotizaciones = await dbContext.Quotes.ToListAsync();
-            var cotizacionesDto = mapper.Map<List<QuoteGetDto>>(cotizaciones);
+            var cotizacionesDto = cotizaciones.Select(c => new QuoteGetDto
+            {
+                Year = c.Year,
+                Makes = c.Makes,
+                Cost = c.Cost,
+                Model = c.Model,
+                Birthdate = c.Birthdate,
+                FullName = DecryptString(c.FullName, cryptokey),
+                Gender = DecryptString(c.Gender, cryptokey),
+                Email = DecryptString(c.Email, cryptokey),
+                Phone = DecryptString(c.Phone, cryptokey),
+                Price = c.Price,
+                InsuranceId = c.InsuranceId,
+                CoverageId = c.CoverageId,
+                CreationDate = c.CreationDate,
+            }).ToList();
+
             return Ok(cotizacionesDto);
         }
 
@@ -113,6 +131,7 @@ namespace backend.Controllers
             var token = authHeader.Substring("Bearer ".Length).Trim();
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(configuration["Jwt:Key"]);
+            var cryptokey = "A3B2C4D5E6F7G8H9";
 
             try
             {
@@ -134,11 +153,11 @@ namespace backend.Controllers
                     Makes = quotePostDto.Makes,
                     Cost = quotePostDto.Cost,
                     Model = quotePostDto.Model,
-                    FullName = quotePostDto.FullName,
                     Birthdate = quotePostDto.Birthdate,
-                    Gender = quotePostDto.Gender,
-                    Email = quotePostDto.Email,
-                    Phone = quotePostDto.Phone,
+                    FullName = EncryptString(quotePostDto.FullName, cryptokey),
+                    Gender = EncryptString(quotePostDto.Gender, cryptokey),
+                    Email = EncryptString(quotePostDto.Email, cryptokey),
+                    Phone = EncryptString(quotePostDto.Phone, cryptokey),
                     Price = quotePostDto.Price,
                     InsuranceId = insuranceId,
                     CoverageId = coverageId,
@@ -156,6 +175,62 @@ namespace backend.Controllers
                 return Unauthorized(new { message = "No cuentas con la autorización para realizar esta acción." });
             }
         }
+
+        public static string EncryptString(string plainText, string key)
+        {
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+
+                aesAlg.GenerateIV();
+                byte[] iv = aesAlg.IV;
+
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, iv);
+
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    msEncrypt.Write(iv, 0, iv.Length);
+
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                    {
+                        swEncrypt.Write(plainText);
+                    }
+
+                    return Convert.ToBase64String(msEncrypt.ToArray());
+                }
+            }
+        }
+
+        public static string DecryptString(string cipherText, string key)
+        {
+            byte[] fullCipher = Convert.FromBase64String(cipherText);
+
+            using (Aes aesAlg = Aes.Create())
+            {
+                aesAlg.Key = Encoding.UTF8.GetBytes(key);
+
+                int ivLength = aesAlg.BlockSize / 8;
+                if (fullCipher.Length < ivLength)
+                {
+                    throw new ArgumentException("El texto cifrado no contiene suficiente información para extraer el IV.");
+                }
+
+                byte[] iv = new byte[ivLength];
+                Array.Copy(fullCipher, iv, ivLength);
+
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, iv);
+
+                using (MemoryStream msDecrypt = new MemoryStream(fullCipher, ivLength, fullCipher.Length - ivLength))
+                using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                {
+                    return srDecrypt.ReadToEnd();
+                }
+            }
+        }
+
+
 
     }
 }

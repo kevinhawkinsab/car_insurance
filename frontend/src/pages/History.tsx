@@ -93,6 +93,13 @@ const History = () => {
     return '';
   }
 
+  const crypthText = (text: string) => {
+    if (text?.length > 20) {
+      return text.slice(0, 15) + '...';
+    }
+    return text;
+  } 
+
   return (
     <>
       <Container className="p-1" maxWidth="xl" sx={{ bgcolor: '#fff', mb: 2, borderRadius: 3 }}>
@@ -126,15 +133,15 @@ const History = () => {
               </div>
             </div>
             <Typography component="h1" variant="h6" m={2} fontWeight={600}>
-              Información General
+              Información del Usuario
             </Typography>
             <Demo>
               <List>
-                <ListItem className="card-details" secondaryAction={selectedRecord && (<Chip color={selectedRecord?.gender == 'female' ? 'warning' : 'primary'} label={selectedRecord?.gender == 'female' ? 'Mujer' : 'Hombre'} />)}>
+                <ListItem className="card-details" secondaryAction={selectedRecord && (<Chip color={selectedRecord?.gender == 'female' ? 'warning' : 'primary'} label={selectedRecord?.gender == 'female' ? 'Mujer' : selectedRecord.gender == 'male' ? 'Hombre' : '*****'} />)}>
                   <ListItemAvatar>
                     <Avatar sx={{ bgcolor: selectedRecord?.gender == 'female' ? '#ef6c00' : '#1e88e5' }}>{profileName(selectedRecord?.fullName)}</Avatar>
                   </ListItemAvatar>
-                  <ListItemText primary={!selectedRecord ? 'Información del usuario' : selectedRecord?.fullName} secondary={selectedRecord?.email} />
+                  <ListItemText primary={!selectedRecord ? 'Nombre: ' : 'Nombre: ' + crypthText(selectedRecord?.fullName)} secondary={ !selectedRecord ? 'Correo: ' : 'Correo: ' + crypthText(selectedRecord?.email)} />
                 </ListItem>
               </List>
             </Demo>
