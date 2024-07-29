@@ -15,10 +15,26 @@ import { API_URL } from '../environment/environment';
 
 import insurance from '../assets/insurance.jpg';
 import Swal from 'sweetalert2';
+import { registerSchema } from '../validations/registerSchema';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 const defaultTheme = createTheme();
+
+type Inputs = {
+  name: string,
+  email:  string,
+  password:  string
+  confirmPassword:  string
+}
+
+
 
 export default function Register() {
   const navigate = useNavigate();
+  const {register,handleSubmit, watch, formState: {errors} } = useForm<Inputs>({
+    resolver: zodResolver(registerSchema)
+  });
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -26,19 +42,12 @@ export default function Register() {
   const handleShowConfirmPassword = () => setShowConfirmPassword((show) => !show);
 
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const user = {
-      name: data.get('name'),
-      email: data.get('email'),
-      password: data.get('password'),
-    };
+  const save = async (data: Inputs) => {
 
-    console.log(user);
+    console.log(data);
     
     try {
-      const response = await axios.post(`${API_URL}/user`, user);
+      const response = await axios.post(`${API_URL}/user`, data);
       console.log(response.data);
 
       Swal.fire({
@@ -71,19 +80,23 @@ export default function Register() {
 
   return (
     <ThemeProvider theme={defaultTheme}>
-      <Container component="main" maxWidth="sm" style={{height: '100vh', display: 'flex', alignItems: 'center'}}>
-        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff', borderRadius: '1rem', padding: '2rem'}}>
+      <Container component="main" maxWidth="sm"  style={{height: '100vh', display: 'flex', alignItems: 'center'}}>
+        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff', borderRadius: '1rem', padding: '2rem', width: '100%'}}>
         <img src={insurance} className='bg-remove' height={200} alt="Lifetide" />
           <Typography component="h1" variant="h5" fontWeight={600}>
             ¡Registro de usuario!
           </Typography>
           <p>Por favor, ingrese los campos presentados a continuación</p>
-          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <TextField margin="normal" fullWidth variant='standard' id="name" label="Nombre completo" name="name" autoComplete="name" autoFocus/>
-            <TextField margin="normal" fullWidth variant='standard' id="email" label="Correo electrónico" name="email" autoComplete="email" autoFocus/>
+          <Box component="form" style={{width: '100%'}} noValidate onSubmit={handleSubmit((data) => save(data))} sx={{ mt: 1 }}>
+            <TextField margin="normal" fullWidth variant='standard' id="name" {...register('name')} label="Nombre completo"  autoComplete="name" autoFocus/>
+            {errors.name?.message && <p className="error-text ">{errors.name?.message}</p>}
+
+            <TextField margin="normal" fullWidth variant='standard' id="email" {...register('email')} label="Correo electrónico" autoFocus/>
+            {errors.email?.message && <p className="error-text ">{errors.email?.message}</p>}
+
             <FormControl margin="normal" fullWidth variant="standard">
               <InputLabel htmlFor="standard-adornment-password">Contraseña</InputLabel>
-              <Input id="standard-adornment-password" name='password' type={showPassword ? 'text' : 'password'}
+              <Input id="standard-adornment-password" {...register('password')} type={showPassword ? 'text' : 'password'}
                 endAdornment={
                   <InputAdornment position="end">
                     <IconButton aria-label="toggle password visibility" onClick={handleShowPassword}>
@@ -93,9 +106,11 @@ export default function Register() {
                 }
               />
             </FormControl>
+            
+            {errors.password?.message && <p className="error-text ">{errors.password?.message}</p>}
             <FormControl margin="normal" fullWidth variant="standard">
               <InputLabel htmlFor="standard-adornment-password">Confirmar contraseña</InputLabel>
-              <Input id="standard-adornment-password" name='confirmPassword' type={showConfirmPassword ? 'text' : 'password'}
+              <Input id="standard-adornment-password" {...register('confirmPassword')}  type={showConfirmPassword ? 'text' : 'password'}
                 endAdornment={
                   <InputAdornment position="end">
                     <IconButton aria-label="toggle password visibility" onClick={handleShowConfirmPassword}>
@@ -105,6 +120,7 @@ export default function Register() {
                 }
               />
             </FormControl>
+            {errors.confirmPassword?.message && <p className="error-text ">{errors.confirmPassword?.message}</p>}
 
             <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, my: 5, padding: '10px', borderRadius: '0.6rem' }}>
               Registrar

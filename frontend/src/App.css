@@ -51,6 +51,20 @@
   gap: 0.5rem;
 }
 
+.cursor {
+  cursor: pointer;
+}
+
+.cursor:hover {
+  background: #f1f5f8;
+}
+
+.error-text {
+  color: red;
+  font-size: 14px;
+  width: 100%;
+}
+
 .gap-1 {
   gap: 1rem;
 }
@@ -89,7 +103,7 @@
 }
 
 .radio-card {
-  margin: 0 1rem;
+  margin: 0 0.5rem;
   display: flex;
   position: relative;
   align-items: center;

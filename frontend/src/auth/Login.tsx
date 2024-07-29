@@ -16,25 +16,30 @@ import insurance from '../assets/insurance.jpg';
 import { API_URL } from '../environment/environment';
 import Swal from 'sweetalert2';
 const defaultTheme = createTheme();
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { loginSchema } from '../validations/loginSchema';
+
+type Inputs = {
+  email:  string,
+  password:  string
+}
+
 
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const {register,handleSubmit, watch, formState: {errors} } = useForm<Inputs>({
+    resolver: zodResolver(loginSchema)
+  });
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const user = {
-      email: data.get('email'),
-      password: data.get('password'),
-    };
-
-    console.log(user);
+  const login = async (data: Inputs) => {
+    console.log(data);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, user);
+      const response = await axios.post(`${API_URL}/auth/login`, data);
       console.log(response.data);
       localStorage.setItem('token', response.data.token);
       navigate('/');
@@ -62,7 +67,7 @@ export default function Login() {
   return (
     <ThemeProvider theme={defaultTheme}>
       <Container component="main" maxWidth="sm" style={{height: '100vh', display: 'flex', alignItems: 'center'}}>
-        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff', borderRadius: '1rem', padding: '2rem'}}>
+        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#fff', borderRadius: '1rem', padding: '2rem', width: '100%'}}>
           <img src={insurance} className='bg-remove' height={200} alt="Lifetide" />
           <Typography component="h1" variant="h5" fontWeight={600}>
             ¡Bienvenido!
@@ -70,11 +75,13 @@ export default function Login() {
           <Typography component="p" color="text.secondary" className="text-center" margin={2}>
             ¡Nos alegra volver a verte! Para utilizar tu cuenta, inicia sesión.
           </Typography>
-          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <TextField margin="normal" fullWidth variant='standard' id="email" label="Correo electrónico" name="email" autoComplete="email" autoFocus />
+          <Box component="form" noValidate onSubmit={handleSubmit((data) => login(data))} sx={{ mt: 1 , width: '100%'}}>
+            <TextField margin="normal" fullWidth variant='standard' id="email" label="Correo electrónico" {...register('email')} autoComplete="email" autoFocus />
+            {errors.email?.message && <p className="error-text ">{errors.email?.message}</p>}
+
             <FormControl margin="normal" fullWidth variant="standard">
               <InputLabel htmlFor="standard-adornment-password">Contraseña</InputLabel>
-              <Input id="standard-adornment-password" name='password' type={showPassword ? 'text' : 'password'}
+              <Input id="standard-adornment-password" {...register('password')} type={showPassword ? 'text' : 'password'}
                 endAdornment={
                   <InputAdornment position="end">
                     <IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword}>
@@ -84,6 +91,7 @@ export default function Login() {
                 }
               />
             </FormControl>
+            {errors.password?.message && <p className="error-text ">{errors.password?.message}</p>}
 
             <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, my: 5, padding: '10px', borderRadius: '0.6rem' }}>
               Iniciar sesión

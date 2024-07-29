@@ -39,30 +39,39 @@ import { useForm } from 'react-hook-form';
 import { InsuranceModel } from '../models/insuranceModel';
 import dayjs, { Dayjs } from 'dayjs';
 import Swal from 'sweetalert2';
+import ProfileSection from '../components/ProfileSection';
+import { InsuranceList } from '../models/insuranceList';
+import { CoverageList } from '../models/coverageList';
 
 export default function Home() {
   const navigate = useNavigate();
   const {register,handleSubmit } = useForm();
-
   const steps: number = 3;
-  const fullCoverageDesc: string = 'Cubre los daños causados a otras personas y también los de tu auto, a consecuencia de un evento o accidente, como: colisión, vuelco, robo, incendio, inundación y otros desastres naturales.';
-  const thirdPartyCoverageDesc: string = 'Cubre únicamente las lesiones corporales y daños causados al auto o propiedades de otras personas en un accidente de tránsito.';
   const [activeStep, setStep] = useState(0);
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [insurance, setInsurance] = useState<InsuranceModel>();
   const [insuranceId, setInsuranceId] = useState<number|null>(null)
   const [token, setToken] = useState<string | null>(null);
+  const [insuranceList, setInsuranceList] = useState<InsuranceList[]>([]);
+  const [coveragesList, setCoveragesList] = useState<CoverageList[]>([]);
   const [makes, setMakes] = useState<CarMake[]>([]);
   const [models, setModels] = useState<CarModel[]>([]);
   const [openQuoteModal, setOpenQuoteModal] = useState(false);
   const [decodedToken, setDecodedToken] = useState<TokenModel | null>(null);
   const [birthdate, setBirthdate] = useState<Dayjs | null>(dayjs('2022-04-17'));
+  const [selectedInsurance, setSelectedInsurance] = useState(1);
+  const [selectedCoverage, setSelectedCoverage] = useState(1);
+
 
   useEffect(() => {
-    // fetchCarMakes();
     const token = localStorage.getItem('token');
     console.log(token);
+
+    // fetchCarMakes();
+    fetchCoverages();
+    fetchInsurances();
+
     if (token) {
       setToken(token);
       try {
@@ -74,47 +83,75 @@ export default function Home() {
       }
     }
 
-    console.log(decodedToken)
+    console.log(decodedToken);
   }, []);
 
 
   const fetchCarMakes = async () => {
-    // try {
-    //   const response = await axios.get('https://car-api2.p.rapidapi.com/api/makes?direction=asc&sort=id', {
-    //     headers: {
-    //       'x-rapidapi-key': 'f267c10fc2mshdcfd5864c42e3e9p1b800ejsn50971d5cc15e'
-    //     }
-    //   });
-    //   setMakes(response.data.data);
-    //   console.log(response.data.data);
-    // } catch (err) {
-    //   console.error(err);
-    // }
+    try {
+      const response = await axios.get('https://car-api2.p.rapidapi.com/api/makes?direction=asc&sort=id', {
+        headers: {
+          'x-rapidapi-key': 'f267c10fc2mshdcfd5864c42e3e9p1b800ejsn50971d5cc15e'
+        }
+      });
+      setMakes(response.data.data);
+      console.log(response.data.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const fetchCarModels = async (car_make_id: number, car_year: string) => {
     console.log(car_make_id, car_year);
-    // try {
-    //   const response = await axios.get(`https://car-api2.p.rapidapi.com/api/models?sort=id&direction=asc&year=2020&verbose=yes&make_id=13`, {
-    //     headers: {
-    //       'x-rapidapi-key': 'f267c10fc2mshdcfd5864c42e3e9p1b800ejsn50971d5cc15e'
-    //     }
-    //   });
-    //   setModels(response.data.data);
-    //   console.log(response.data.data);
-    // } catch (err) {
-    //   console.error(err);
-    // }
+    try {
+      const response = await axios.get(`https://car-api2.p.rapidapi.com/api/models?sort=id&direction=asc&year=2020&verbose=yes&make_id=${car_make_id}`, {
+        headers: {
+          'x-rapidapi-key': 'f267c10fc2mshdcfd5864c42e3e9p1b800ejsn50971d5cc15e'
+        }
+      });
+      setModels(response.data.data);
+      console.log(response.data.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const fetchCoverages = () => {
-
+  const fetchCoverages = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/InsuranceInfo/Coverages`)
+      console.log(response.data);
+      setCoveragesList(response.data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
 
-  const fetchInsurances = () => {
-
+  const handleRadioCoverageChange = (event: any) => {
+    setSelectedCoverage(Number(event.target.value));
   };
+
+  const selectCoverageDesc = coveragesList.find(item => item.id === selectedCoverage)?.description || '';
+
+
+
+  const fetchInsurances = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/InsuranceInfo/Insurances`)
+      console.log(response.data);
+      localStorage.setItem("insuranceList", JSON.stringify(response.data));
+      setInsuranceList(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleRadioChange = (event: any) => {
+    setSelectedInsurance(Number(event.target.value));
+  };
+
+  const selectedDescription = insuranceList.find(item => item.id === selectedInsurance)?.description || '';
+
 
   const handleMake = (event: SelectChangeEvent) => {
     setBrand(event.target.value);
@@ -126,40 +163,6 @@ export default function Home() {
   const handleModel = (event: SelectChangeEvent) => {
     setModel(event.target.value);
   };
-
-
-  const profileName = (name: string | undefined) => {
-    if (name) {
-      const words = name.trim().split(/\s+/);
-
-      if (words.length < 2) {
-        return name.split('')[0];
-      }
-
-      const initials = words[0][0] + words[1][0];
-      return initials.toUpperCase();
-    }
-
-    return '';
-  }
-
-  const logout = async () => {
-    try {
-      const response = await axios.post(`${API_URL}/auth/logout`, {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      console.log(response.data);
-
-      if (response.data.message === 'Ok') {
-        localStorage.removeItem('token');
-        navigate('auth/login');
-      }
-    } catch (err: any) {
-      console.log(err.response.data);
-    }
-  }
 
   const generateQuote = async (data: any) =>  {
     data.birthdate = birthdate?.format('YYYY-MM-DD');
@@ -202,7 +205,9 @@ export default function Home() {
       Swal.fire({
         icon: "success",
         title: "Éxito",
-        text: response.data,
+        text: response.data.message,
+      }).then(() => {
+        navigate('/history');
       });
     } catch (error: any) {
       console.error(error);
@@ -232,22 +237,7 @@ export default function Home() {
           <Typography component="h1" variant="h5" fontWeight={600}>
             Seguro Automotriz
           </Typography>
-          <div className="flex gap-1">
-            <Link to="/history" className="flex mx-1">
-              <Avatar sx={{ bgcolor: '#1e88e5' }}>{profileName(decodedToken?.unique_name)}</Avatar>
-              <div className="flex flex-col">
-                <Typography component="p" color="black" fontWeight={600}>
-                  {decodedToken?.unique_name}
-                </Typography>
-                <Typography component="p" lineHeight={0} color="text.secondary">
-                  {decodedToken?.role === '2' ? 'Cliente' : 'Administrador'}
-                </Typography>
-              </div>
-            </Link>
-            <IconButton color='primary' aria-label="logout" onClick={logout}>
-              <Logout />
-            </IconButton>
-          </div>
+          <ProfileSection token={token} decodedToken={decodedToken} />
         </div>
         <div className="flex justify-between my-1">
           <div className="flex items-center">
@@ -283,26 +273,25 @@ export default function Home() {
               </Typography>
               <Box className="flex flex-col justify-center items-center" sx={{ my: 3 }}>
                 <FormControl>
-                  <RadioGroup row aria-labelledby="demo-radio-buttons-group-label" defaultValue="1">
-                    <Paper elevation={12} className="radio-card w-2 h-2" sx={{ borderRadius: 3 }}>
-                      <DirectionsCarFilledIcon color='primary' sx={{ fontSize: '6rem' }} />
-                      <FormControlLabel value="1" control={<Radio {...register('insuranceId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
-                      <Typography component="p" fontWeight={600}>
-                        Cobertura completa
-                      </Typography>
-                    </Paper>
-                    <Paper elevation={12} className="radio-card w-2 h-2" sx={{ borderRadius: 3 }}>
-                      <CarCrashIcon color='primary' sx={{ fontSize: '6rem' }} />
-                      <FormControlLabel value="2" control={<Radio {...register('insuranceId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
-                      <Typography component="p" fontWeight={600}>
-                        Daños a terceros
-                      </Typography>
-                    </Paper>
+                  <RadioGroup className="flex items-center justify-center" row aria-labelledby="demo-radio-buttons-group-label" value={selectedInsurance} onChange={handleRadioChange}>
+                    {insuranceList.map(item => (
+                      <Paper elevation={12} key={item.id} className="radio-card w-2 h-2" sx={{ borderRadius: 3 }}>
+                        {item.id == 1 ? (
+                          <DirectionsCarFilledIcon color='primary' sx={{ fontSize: '6rem' }} />
+                        ) : (
+                          <CarCrashIcon color='primary' sx={{ fontSize: '6rem' }} />
+                        )}
+                        <FormControlLabel value={item.id} control={<Radio {...register('insuranceId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                        <Typography component="p" fontWeight={600}>
+                          {item.name}
+                        </Typography>
+                      </Paper>
+                    ))}
+                    <Typography className="text-center" component="p" color="text.secondary" fontWeight={500} margin={2}>
+                      {selectedDescription}
+                    </Typography>
                   </RadioGroup>
                 </FormControl>
-                <Typography className="text-center" component="p" color="text.secondary" fontWeight={500} margin={2}>
-                  {activeStep === 0 ? fullCoverageDesc : thirdPartyCoverageDesc}
-                </Typography>
               </Box>
             </div>
           ) : activeStep === 1 ? (
@@ -318,21 +307,21 @@ export default function Home() {
                       <InputLabel id="demo-simple-select-label">Marca</InputLabel>
                       <Select labelId="demo-simple-select-label" id="demo-simple-select" label="Marca" value={brand} {...register('makes')} onChange={handleMake}>
                         {/* {makes.map((item) => (
-                          <MenuItem value={item.id} key={item.id}>{item.name}</MenuItem>
+                          <MenuItem value={item.id + ''} key={item.id}>{item.name}</MenuItem>
                         ))} */}
-                                       <MenuItem value={'10'}>Ten</MenuItem>
+                        <MenuItem value={'10'}>Ten</MenuItem>
                         <MenuItem value={'20'}>Twenty</MenuItem>
                         <MenuItem value={'30'}>Thirty</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField variant="outlined" margin="normal" required fullWidth id="year" label="Año" {...register('year')} />
+                    <TextField variant="outlined" margin="normal" required fullWidth id="year" label="Año" {...register('year')}  />
                   </Grid>
                   <Grid item xs={12}>
                     <FormControl variant="outlined" fullWidth sx={{ mt: 2 }}>
                       <InputLabel id="demo-simple-select-label">Modelo</InputLabel>
-                      <Select labelId="demo-simple-select-label" id="demo-simple-select" value={model} label="Modelo" {...register('model')} onChange={handleModel}>
+                      <Select labelId="demo-simple-select-label" id="demo-simple-select" value={model} label="Modelo" {...register('model')}  onChange={handleModel}>
                         <MenuItem value={'10'}>Ten</MenuItem>
                         <MenuItem value={'20'}>Twenty</MenuItem>
                         <MenuItem value={'30'}>Thirty</MenuItem>
@@ -340,7 +329,7 @@ export default function Home() {
                     </FormControl>
                   </Grid>
                   <Grid item xs={12}>
-                    <TextField variant="outlined" margin="normal" required fullWidth id="cost" label="Costo" {...register('cost')} />
+                    <TextField variant="outlined" margin="normal" required fullWidth id="cost" label="Costo" {...register('cost')}  />
                   </Grid>
                 </Grid>
               </Box>
@@ -354,7 +343,7 @@ export default function Home() {
               <Box className="flex flex-col justify-center items-center" sx={{ my: 3 }}>
                 <Grid container spacing={3} sx={{ width: '600px' }}>
                   <Grid item xs={12}>
-                    <TextField variant="outlined" margin="normal" required fullWidth id="fullName" label="Nombre completo" {...register('fullName')} />
+                    <TextField variant="outlined" margin="normal" required fullWidth id="fullName" label="Nombre completo" {...register('fullName')}  />
                   </Grid>
                   <Grid item xs={6}>
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -367,8 +356,8 @@ export default function Home() {
                     <FormLabel id="demo-row-radio-buttons-group-label">Género</FormLabel>
                     <FormControl>
                       <RadioGroup row defaultValue="female" aria-labelledby="demo-row-radio-buttons-group-label">
-                        <FormControlLabel value="female" control={<Radio {...register('gender')} />} label="Femenino" />
-                        <FormControlLabel value="male" control={<Radio {...register('gender')} />} label="Masculino" />
+                        <FormControlLabel value="female" control={<Radio  {...register('gender')} />} label="Femenino" />
+                        <FormControlLabel value="male" control={<Radio  {...register('gender')}/>} label="Masculino" />
                       </RadioGroup>
                     </FormControl>
                   </Grid>
@@ -389,33 +378,27 @@ export default function Home() {
               </Typography>
               <Box className="flex flex-col justify-center items-center" sx={{ my: 3 }}>
                 <FormControl>
-                  <RadioGroup row aria-labelledby="demo-radio-buttons-group-label" defaultValue="1">
-                    <Paper elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
-                      <DragHandleIcon color='primary' sx={{ fontSize: '4rem' }} />
-                      <FormControlLabel value="1"  control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
-                      <Typography component="p" fontWeight={600}>
-                        Resp. civil
-                      </Typography>
-                    </Paper>
-                    <Paper elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
-                      <RuleIcon color='primary' sx={{ fontSize: '4rem' }} />
-                      <FormControlLabel value="2" control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
-                      <Typography component="p" fontWeight={600}>
-                        Limitada
-                      </Typography>
-                    </Paper>
-                    <Paper elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
-                      <ChecklistRtlIcon color='primary' sx={{ fontSize: '4rem' }} />
-                      <FormControlLabel value="3" control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
-                      <Typography component="p" fontWeight={600}>
-                        Amplia
-                      </Typography>
-                    </Paper>
+                  <RadioGroup className="flex items-center justify-center" row aria-labelledby="demo-radio-buttons-group-label" value={selectedCoverage} onChange={handleRadioCoverageChange}>
+                    {coveragesList.map(item => (
+                      <Paper key={item.id} elevation={12} className="radio-card w-1 h-1" sx={{ borderRadius: 3 }}>
+                        {item.id == 1 ? (
+                          <DragHandleIcon color='primary' sx={{ fontSize: '4rem' }} />
+                        ): item.id == 2 ? (
+                          <RuleIcon color='primary' sx={{ fontSize: '4rem' }} />
+                        ): (
+                          <ChecklistRtlIcon color='primary' sx={{ fontSize: '4rem' }} />
+                        )}
+                        <FormControlLabel value={item.id}  control={<Radio {...register('coverageId')} />} label="" sx={{ position: 'absolute', right: '0', top: '0.5rem' }} />
+                        <Typography component="p" fontWeight={600}>
+                          {item.name}
+                        </Typography>
+                      </Paper>
+                    ))}
+                    <Typography className="text-center" component="p" color="text.secondary" fontWeight={500} margin={2}>
+                    {selectCoverageDesc}
+                  </Typography>
                   </RadioGroup>
                 </FormControl>
-                <Typography className="text-center" component="p" color="text.secondary" fontWeight={500} margin={2}>
-                  {activeStep === 0 ? fullCoverageDesc : thirdPartyCoverageDesc}
-                </Typography>
               </Box>
             </div>
           )}

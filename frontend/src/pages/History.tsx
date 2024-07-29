@@ -8,6 +8,11 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../environment/environment';
 import moment from 'moment';
+import { TokenModel } from '../models/tokenModel';
+import { jwtDecode } from 'jwt-decode';
+import ProfileSection from '../components/ProfileSection';
+import { cursorTo } from 'readline';
+import { InsuranceList } from '../models/insuranceList';
 
 
 const Demo = styled('div')(({ theme }) => ({
@@ -15,23 +20,63 @@ const Demo = styled('div')(({ theme }) => ({
 }));
 
 
+
 const History = () => {
   const [records, setRecords] = useState([]);
+  const [token, setToken] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [insurances, setInsurances] = useState<InsuranceList[]>([]);
+  const [decodedToken, setDecodedToken] = useState<TokenModel | null>(null);
 
   useEffect(() => {
-    fetchRecords();
+    decodeToken();
+    const list = localStorage.getItem("insuranceList");
+    if(list){
+      console.log(JSON.parse(list));
+      setInsurances(JSON.parse(list));
+    }
   }, []);
 
-  const fetchRecords = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/quote`)
-      console.log(response.data);
-      setRecords(response.data);
-    } catch (error) {
-      console.log(error);
+  const fetchRecords = async (decoded: TokenModel) => {
+    if(decoded) {
+      if(decoded.role == '1'){
+        try {
+          const response = await axios.get(`${API_URL}/quote`)
+          console.log(response.data);
+          setRecords(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+  
+      }else {
+        try {
+          const response = await axios.get(`${API_URL}/quote/user/${decoded.nameid}/quotes`)
+          console.log(response.data);
+          setRecords(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+      }
     }
   };
+
+  const decodeToken = () => {
+    const token = localStorage.getItem('token');
+    console.log(token);
+    if (token) {
+      setToken(token);
+      try {
+        const decoded = jwtDecode<TokenModel>(token);
+        console.log(decoded);
+        setDecodedToken(decoded);
+        fetchRecords(decoded);
+      } catch (error) {
+        console.error('Invalid token', error);
+      }
+    }
+  };
+
+  const selectInsuranceDesc = insurances.find(item => item.id === selectedRecord?.insuranceId)?.name || ''; 
 
   const profileName = (name: string | undefined) => {
     if (name) {
@@ -55,17 +100,7 @@ const History = () => {
           <Typography component="h1" variant="h5" fontWeight={600}>
             Seguro Automotriz
           </Typography>
-          <Link to="/history" className="flex gap-1">
-            <Avatar sx={{ bgcolor: '#1e88e5' }}>KH</Avatar>
-            <div className="flex flex-col">
-              <Typography component="p" color="black" fontWeight={600}>
-                Kevin Hawkins
-              </Typography>
-              <Typography component="p" lineHeight={0} style={{ color: 'grey' }}>
-                Cliente
-              </Typography>
-            </div>
-          </Link>
+          <ProfileSection token={token} decodedToken={decodedToken} />
         </div>
       </Container>
       <Container className="p-1" maxWidth="xl" sx={{ bgcolor: '#fff', mb: 2, borderRadius: 3 }}>
@@ -86,7 +121,7 @@ const History = () => {
               <div className="radio-card w-3 h-3" style={{ background: '#f1f5f8', borderRadius: '1rem' }}>
                 <DirectionsCarFilledIcon color='primary' sx={{ fontSize: '10rem' }} />
                 <Typography component="p" fontWeight={600}>
-                  {selectedRecord?.fullName}
+                  {selectInsuranceDesc}
                 </Typography>
               </div>
             </div>
@@ -95,21 +130,11 @@ const History = () => {
             </Typography>
             <Demo>
               <List>
-                <ListItem className="card-details" secondaryAction={<Chip color="warning" label={'Rejected'} />}>
+                <ListItem className="card-details" secondaryAction={selectedRecord && (<Chip color={selectedRecord?.gender == 'female' ? 'warning' : 'primary'} label={selectedRecord?.gender == 'female' ? 'Mujer' : 'Hombre'} />)}>
                   <ListItemAvatar>
-                    <Avatar>
-                      <DirectionsCarFilledIcon />
-                    </Avatar>
+                    <Avatar sx={{ bgcolor: selectedRecord?.gender == 'female' ? '#ef6c00' : '#1e88e5' }}>{profileName(selectedRecord?.fullName)}</Avatar>
                   </ListItemAvatar>
-                  <ListItemText primary="Leslie Sansone" secondary="Appointment on Jun 22 - 10:30pm" />
-                </ListItem>
-                <ListItem className="card-details" secondaryAction={<Chip color="warning" label={'Rejected'} />}>
-                  <ListItemAvatar>
-                    <Avatar>
-                      <DirectionsCarFilledIcon />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText primary="Leslie Sansone" secondary="Appointment on Jun 22 - 10:30pm" />
+                  <ListItemText primary={!selectedRecord ? 'Información del usuario' : selectedRecord?.fullName} secondary={selectedRecord?.email} />
                 </ListItem>
               </List>
             </Demo>
@@ -129,9 +154,9 @@ const History = () => {
               </TableHead>
               <TableBody>
                 {records.slice(0, 9).map((item: any) => (
-                  <TableRow key={item.id} onClick={(() =>  setSelectedRecord(item))}>
+                  <TableRow key={item.id} className="cursor" onClick={(() =>  setSelectedRecord(item))}>
                     <TableCell>
-                      <Avatar sx={{ bgcolor: '#1e88e5' }}>{profileName(item.fullName)}</Avatar>
+                      <Avatar sx={{ bgcolor: item.gender == 'female' ? '#ef6c00' : '#1e88e5' }}>{profileName(item.fullName)}</Avatar>
                     </TableCell>
                     <TableCell>{item.makes}</TableCell>
                     <TableCell>{moment(item.creationDate).format('L')}</TableCell>

@@ -44,11 +44,18 @@ namespace backend.Controllers
             }
 
             var fechaActual = DateTime.Now.Year;
+
+            if (year > fechaActual)
+            {
+                return BadRequest(new { message = "El año del vehículo no puede ser mayor al año actual." });
+            }
+
+
             var fechaDelAuto = fechaActual - year;
 
-            if (fechaDelAuto < 0)
+            if (fechaDelAuto <= 0)
             {
-                return BadRequest(new { message = "El vehículo debe contar con al menos un año." });
+                return BadRequest(new { message = "El año del vehículo no puede ser el año actual." });
             }
 
             var precioSeguro = (cost / fechaDelAuto) * 0.0035m;
@@ -64,18 +71,18 @@ namespace backend.Controllers
 
 
         [HttpGet]
-        [Route("{id:int}")]
-        public async Task<IActionResult> ObtenerCotizacion(int id)
+        [Route("user/{userId:int}/quotes")]
+        public async Task<IActionResult> ObtenerCotizacion(int userId)
         {
-            var cotizacion = await dbContext.Quotes.FirstOrDefaultAsync(x => x.Id == id);
+            var cotizaciones = await dbContext.Quotes.Where(x => x.UserId == userId).ToListAsync();
             
-            if(cotizacion == null)
+            if(cotizaciones == null || !cotizaciones.Any())
             {
-                return NotFound(new { message = "Número de cotización no encontrada" });
+                return NotFound(new { message = "No se encontraron cotizaciones para este usuario." });
             }
 
-            var cotizacionDto = mapper.Map<QuoteGetDto>(cotizacion);
-            return Ok(cotizacionDto);
+            var cotizacionesDto = mapper.Map<List<QuoteGetDto>>(cotizaciones);
+            return Ok(cotizacionesDto);
         }
 
 
