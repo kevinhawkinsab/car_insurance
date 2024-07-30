@@ -12,8 +12,8 @@ using backend.Context;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240728092927_First_Migration")]
-    partial class First_Migration
+    [Migration("20240730002456_Primera_Migracion")]
+    partial class Primera_Migracion
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,6 +44,26 @@ namespace backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Coverages", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Cobertura básica que protege contra daños a terceros en sus bienes o personas, pero no cubre daños al vehículo propio.",
+                            Name = "Resp. civil"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Incluye responsabilidad civil y protege contra robo total del vehículo y daños por desastres naturales, sin cubrir daños propios por colisiones.",
+                            Name = "Limitada"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "Cobertura completa que incluye responsabilidad civil, daños a terceros, robo total, desastres naturales, y daños propios por colisiones y accidentes.",
+                            Name = "Amplia"
+                        });
                 });
 
             modelBuilder.Entity("backend.Models.Insurance", b =>
@@ -65,6 +85,20 @@ namespace backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Insurances", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "Cubre los daños causados a otras personas y también los de tu auto, a consecuencia de un evento o accidente, como: colisión, vuelco, robo, incendio, inundación y otros desastres naturales.",
+                            Name = "Cobertura completa"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "Cubre únicamente las lesiones corporales y daños causados al auto o propiedades de otras personas en un accidente de tránsito.",
+                            Name = "Daños a terceros"
+                        });
                 });
 
             modelBuilder.Entity("backend.Models.Quote", b =>
@@ -75,8 +109,8 @@ namespace backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateOnly>("Birthdate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("Birthdate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Cost")
                         .IsRequired()
@@ -154,6 +188,18 @@ namespace backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Administrador"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Cliente"
+                        });
                 });
 
             modelBuilder.Entity("backend.Models.User", b =>

@@ -38,6 +38,24 @@ namespace backend.Context
             modelBuilder.Entity<Quote>().ToTable("Quotes");
             modelBuilder.Entity<Insurance>().ToTable("Insurances");
             modelBuilder.Entity<Coverage>().ToTable("Coverages");
+
+
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = 1, Name = "Administrador" },
+                new Role { Id = 2, Name = "Cliente" }
+            );
+
+            modelBuilder.Entity<Coverage>().HasData(
+                new Coverage { Id = 1, Name = "Resp. civil", Description = "Cobertura básica que protege contra daños a terceros en sus bienes o personas, pero no cubre daños al vehículo propio." },
+                new Coverage { Id = 2, Name = "Limitada", Description = "Incluye responsabilidad civil y protege contra robo total del vehículo y daños por desastres naturales, sin cubrir daños propios por colisiones." },
+                new Coverage { Id = 3, Name = "Amplia", Description = "Cobertura completa que incluye responsabilidad civil, daños a terceros, robo total, desastres naturales, y daños propios por colisiones y accidentes." }
+            );
+
+
+            modelBuilder.Entity<Insurance>().HasData(
+                new Insurance { Id = 1, Name = "Cobertura completa", Description = "Cubre los daños causados a otras personas y también los de tu auto, a consecuencia de un evento o accidente, como: colisión, vuelco, robo, incendio, inundación y otros desastres naturales." },
+                new Insurance { Id = 2, Name = "Daños a terceros", Description = "Cubre únicamente las lesiones corporales y daños causados al auto o propiedades de otras personas en un accidente de tránsito." }
+            );
         }
     }
 }

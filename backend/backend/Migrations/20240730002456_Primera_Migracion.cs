@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class First_Migration : Migration
+    public partial class Primera_Migracion : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -85,7 +87,7 @@ namespace backend.Migrations
                     Cost = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Model = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Birthdate = table.Column<DateOnly>(type: "date", nullable: false),
+                    Birthdate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Gender = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -116,6 +118,34 @@ namespace backend.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.InsertData(
+                table: "Coverages",
+                columns: new[] { "Id", "Description", "Name" },
+                values: new object[,]
+                {
+                    { 1, "Cobertura básica que protege contra daños a terceros en sus bienes o personas, pero no cubre daños al vehículo propio.", "Resp. civil" },
+                    { 2, "Incluye responsabilidad civil y protege contra robo total del vehículo y daños por desastres naturales, sin cubrir daños propios por colisiones.", "Limitada" },
+                    { 3, "Cobertura completa que incluye responsabilidad civil, daños a terceros, robo total, desastres naturales, y daños propios por colisiones y accidentes.", "Amplia" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Insurances",
+                columns: new[] { "Id", "Description", "Name" },
+                values: new object[,]
+                {
+                    { 1, "Cubre los daños causados a otras personas y también los de tu auto, a consecuencia de un evento o accidente, como: colisión, vuelco, robo, incendio, inundación y otros desastres naturales.", "Cobertura completa" },
+                    { 2, "Cubre únicamente las lesiones corporales y daños causados al auto o propiedades de otras personas en un accidente de tránsito.", "Daños a terceros" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Name" },
+                values: new object[,]
+                {
+                    { 1, "Administrador" },
+                    { 2, "Cliente" }
                 });
 
             migrationBuilder.CreateIndex(
