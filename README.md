@@ -21,7 +21,7 @@ Paso# 6: Ejecutar el comando: Add-Migration "Primera_Migracion" para agregar la 
 Paso# 7: Ejecutar el comando: Update-database para actualizar y visualizar las tablas en la Base de Datos
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-7.png)
 
-Paso#8: Creación de usuario e Inicio de sesión:
+Paso#8: Creación de usuario e Inicio de sesión: Implementación de Bcrypt para el hashing y el salting de la contraseña, manejo de token con jwt
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-8.png)
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-9.png)
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-10.png)
@@ -29,7 +29,7 @@ Paso#8: Creación de usuario e Inicio de sesión:
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-12.png)
 
 
-Paso#9: Formulario de cotización
+Paso#9: Formulario de cotización, implementación de encriptación y desencriptación con System.Security.Cryptography
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-13.png)
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-14.png)
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-16.png)
@@ -37,6 +37,6 @@ Paso#9: Formulario de cotización
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-18.png)
 
 
-Paso#10: Historial de cotizaciones con usuario cliente con la información del usuario encriptada(Nombre, correo, género) e Historial de cotizaciones con usuario administrador con información totalmente desencriptada
+Paso#10: Historial de cotizaciones con usuario de rol CLIENTE con la información del usuario encriptada(Nombre, correo, género) y límite de visualización de solo sus propias cotizaciones e Historial de cotizaciones con usuario de rol ADMINISTRADOR que puede visualizar todas las cotizaciones con información totalmente desencriptada
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-21.png)
 ![Image text](https://github.com/kevinhawkinsab/imagenes_insurance/blob/main/image-22.png)
